@@ -1,0 +1,270 @@
+*-------------------------------------------------------------
+* Discrete Variables Analysis
+*-------------------------------------------------------------
+
+* Cross-tabulation (Tabulations)
+
+* Gender variable analysis (femme)
+tab femme
+
+* Remove observations with missing sex (femme==99)
+replace femme=. if femme==99
+
+* Alternative: drop if femme==99
+
+* Tabulate gender with all variables
+tab femme, m
+
+*-------------------------------------------------------------
+* Continuous Variables Analysis
+*-------------------------------------------------------------
+
+* Descriptive statistics for salary (salaire)
+sum salaire
+sum salaire, detail 
+
+* Descriptive statistics for salary by gender
+sum salaire if femme==0
+sum salaire if femme==1
+
+* Distribution of salary (Histogram)
+histogram salaire, percent
+
+* Identify salaries greater than or equal to 6000
+tab salaire if salaire >=6000
+
+* Histogram for salaries less than 6000
+histogram salaire if salaire <6000, percent
+histogram salaire if salaire <6000, bin(10) percent
+
+* Bar charts by category
+graph bar (count) salaire, over(femme)
+graph bar (mean) salaire, over(femme)
+graph bar (mean) salaire, over(femme) over(IdF)
+
+* Boxplot by category
+graph box salaire, over(femme)   
+graph box salaire, over(femme) nooutsides   
+
+*-------------------------------------------------------------
+* 2. Analyzing Relationships between Variables
+*-------------------------------------------------------------
+
+* 2.1. Cross-tabulations - Contingency tables
+
+* Tabulate gender vs region (IdF)
+tab femme IdF
+
+* Frequencies (percentage of the total)
+tab femme IdF, cell nofreq
+
+* Percentage by column
+tab femme IdF, col nofreq
+
+* Percentage by row
+tab femme IdF, row nofreq
+
+* 2.2. Chi-squared Test
+tab femme IdF, chi2
+* If p-value < 0.05, we reject the null hypothesis of independence between the two variables.
+
+* 2.3. Stacked bar charts
+
+* Generate labels for regions and gender
+gen region = "Ile-de-France" if IdF==1
+replace region ="Autre" if IdF==0
+gen genre = "Femme" if femme==1
+replace genre = "Homme" if femme==0
+
+* Stacked bar chart by region and gender
+graph hbar (count), over(genre) over(region) percent stack asyvars
+
+* Bar chart by gender and region
+graph bar (mean) IdF, over(femme)
+
+*-------------------------------------------------------------
+* 2.4 Variance and Covariance Analysis
+*-------------------------------------------------------------
+
+* Descriptive statistics for etud (years of study) and salaire (salary)
+sum etud salaire
+
+* Correlation between etud and salaire
+corr etud salaire
+
+* Correlation with significance levels
+pwcorr etud salaire, sig
+
+* Covariance
+corr etud salaire, cov
+
+*-------------------------------------------------------------
+* 2.5 Scatter Plots and Regression
+*-------------------------------------------------------------
+
+* Scatter plot between salary and years of study
+graph twoway scatter salaire etud
+
+* Fitted line for salary based on years of study
+graph twoway lfit salaire etud
+
+* Scatter plot with regression line for salary and years of study
+graph twoway (scatter salaire etud) (lfit salaire etud)
+graph twoway (scatter salaire etud) (lfit salaire etud) if salaire <6000
+
+*-------------------------------------------------------------
+* 3. Salary Equation Estimation
+*-------------------------------------------------------------
+
+* 3.1 Simple Regression
+
+regress salaire etud 
+
+* Predict salary for an individual with 12 years of education (etud = 12)
+display _b[_cons] + _b[etud] * 12
+
+* Create predicted salary variable (yhat)
+predict yhat, xb
+
+* 3.2 Multiple Regression
+regress salaire etud anciennete
+
+* Regression excluding outliers (salaire < 6000)
+regress salaire etud if salaire <6000
+
+*-------------------------------------------------------------
+* 4. Log-Transformation of Variables for Salary Equation
+*-------------------------------------------------------------
+
+* 4.1 Log Transformation for Salary
+gen lnsalaire = ln(salaire)
+
+* Visualize the distribution of salary and log-transformed salary
+histogram salaire, percent
+histogram lnsalaire, percent
+
+* Multiple regression with log-transformed salary
+regress lnsalaire etud anciennete femme IdF 
+
+* Interpretation of coefficients in log form (semi-elasticities)
+
+* 4.2 Heterogeneity of experience effect (with squared term)
+gen sqanciennete = anciennete * anciennete
+regress lnsalaire etud anciennete sqanciennete femme IdF 
+
+* Calculate the effect of experience at various levels
+di (_b[anciennete]) * 100
+di (_b[anciennete] + 2 * _b[sqanciennete] * 0) * 100
+di (_b[anciennete] + 2 * _b[sqanciennete] * 10) * 100
+di (_b[anciennete] + 2 * _b[sqanciennete] * 20) * 100
+di (_b[anciennete] + 2 * _b[sqanciennete] * 30) * 100
+di (_b[anciennete] + 2 * _b[sqanciennete] * 40) * 100
+sum anciennete
+di (_b[anciennete] + 2 * _b[sqanciennete] * 21) * 100
+
+* Plot the marginal effects of experience
+regress lnsalaire etud c.anciennete##c.anciennete femme IdF 
+margins, dydx(anciennete) at(anciennete = (0(1)45))
+marginsplot
+
+*-------------------------------------------------------------
+* Real Estate Prices Analysis (Prix Immobiliers)
+*-------------------------------------------------------------
+
+* Open the real estate price dataset
+use prixmaisons.dta, clear
+
+* Descriptive statistics for price
+sum price
+sum price, detail
+
+* Histogram for price distribution
+histogram price, percent
+
+* Boxplot for price distribution (without outliers)
+graph box price
+graph box price, nooutsides
+
+*-------------------------------------------------------------
+* Link between Discrete Variables (Rooms and Baths)
+*-------------------------------------------------------------
+
+* Cross-tabulation between rooms and baths
+tab rooms baths
+
+* Chi-squared test between rooms and baths
+tab rooms baths, chi2
+
+* Visualize the relationship between rooms and baths with bar chart
+graph bar rooms, over(baths)
+
+*-------------------------------------------------------------
+* Link between Continuous Variables (Price, Area, Land)
+*-------------------------------------------------------------
+
+* Correlation between price, area, and land
+pwcorr price area land, sig
+corr price area land, cov
+
+* Scatter plot between price and area
+graph twoway scatter price area
+
+* Fitted regression line for price based on area
+graph twoway lfit price area
+
+* Multiple regression for price and area
+regress price area
+display _b[_cons] + _b[area] * 100
+
+* Multiple regression including rooms
+regress price area rooms
+
+*-------------------------------------------------------------
+* Real Estate Price Prediction and Interpretation
+*-------------------------------------------------------------
+
+* Predicted price for homes of different sizes
+display _b[_cons] + _b[area] * 100
+display _b[_cons] + _b[area] * 200
+display _b[_cons] + _b[area] * 300
+
+*-------------------------------------------------------------
+* Model Specification and Log Transformation
+*-------------------------------------------------------------
+
+* Regression with log-transformed price
+gen lnprice = ln(price)
+regress lnprice area rooms land age
+
+* Interpretation of effects on price due to changes in area and age
+di (_b[area] * 100)
+di (_b[area] * 10) * 100
+di (_b[area] * 100) * 100
+
+* Transform area variable to reflect area in 10m² increments
+gen area10m2 = area / 10
+regress lnprice area10m2 rooms land age
+
+* Effects of house age on price
+di (_b[age] * 100)
+
+*-------------------------------------------------------------
+* Additional Models and Interactions
+*-------------------------------------------------------------
+
+* Model with squared age
+gen agesq = age * age
+regress lnprice area rooms land age agesq
+
+* Calculate marginal effects of age
+di (_b[age] * 100)
+di (_b[age] + 2 * _b[agesq] * 0) * 100
+di (_b[age] + 2 * _b[agesq] * 20) * 100
+di (_b[age] + 2 * _b[agesq] * 50) * 100
+di (_b[age] + 2 * _b[agesq] * 100) * 100
+
+* Final regression with binary variable B2 (bathrooms)
+regress lnprice area rooms land age B2
+
+* Model with baths as a discrete variable
+regress lnprice area rooms land age i.baths
