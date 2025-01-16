@@ -1,0 +1,89 @@
+*-----------------------------------------------------------
+* 1. Descriptive Statistics
+*-----------------------------------------------------------
+
+* Descriptive statistics for the continuous variable Amount
+sum Amount
+sum Amount, detail
+
+* Descriptive statistics for the continuous variable MPHover
+sum MPHover
+sum MPHover, detail
+
+* Descriptive statistics for the continuous variable Age
+sum age
+sum age, detail
+
+* Descriptive statistics for discrete variables
+tab Female
+tab Black
+tab Hispanic
+tab OutState
+
+*-----------------------------------------------------------
+* 2. Simple Regression - Model 1
+*-----------------------------------------------------------
+
+* Simple regression with Amount and Age
+regress Amount Age
+
+* Interpretation: Each additional year reduces the fine amount by an average of $131 USD. 
+* This effect is statistically significant at the 1% and 5% levels (p-value < 0.01 and < 0.05).
+sum Amount Age
+
+* R² = 0.0043: The driver's age explains 0.43% of the fine amount, while the rest is explained by other factors not included in the regression.
+
+*-----------------------------------------------------------
+* 3. Multiple Regression - Model 2
+*-----------------------------------------------------------
+
+* Multiple regression with Amount, Age, and MPHover
+regress Amount Age MPHover
+
+* Correlation between Age and MPHover
+pwcorr Age MPHover, sig
+
+* Interpretation: With the inclusion of the MPHover variable, the coefficient of the Age variable increases from -0.29 to 0.028.
+* This is because the first regression did not account for the speed over the limit, which is an important factor in determining the fine amount.
+
+*-----------------------------------------------------------
+* 4. Model 3 - Regression with Additional Variables
+*-----------------------------------------------------------
+
+* Multiple regression with Age, MPHover, and other binary variables
+regress Amount Age MPHover Female Black Hispanic OutState
+
+* Interpretation of results:
+* - Age: The effect is not statistically significant.
+* - MPHover: Each additional mile per hour over the speed limit increases the fine amount by an average of $7 USD. Statistically significant.
+* - Female: The fine amount decreases by $3 USD on average for female drivers. Statistically significant.
+* - Black: The effect is not statistically significant.
+* - Hispanic: The fine amount increases by $2.86 USD on average for Hispanic or Latino drivers. Statistically significant.
+* - OutState: The fine amount increases by $9.79 USD on average for drivers residing in another state. Statistically significant.
+
+*-----------------------------------------------------------
+* 5. Heterogeneity Analysis (MPHover squared)
+*-----------------------------------------------------------
+
+* Generate the variable ln(Amount) and perform regression
+gen lnAmount = ln(Amount)
+regress lnAmount Age MPHover
+
+* Generate the variable MPHover squared and perform regression
+generate MPHover_squared = MPHover^2
+regress lnAmount Age MPHover MPHover_squared
+
+* Calculate the effect of an additional mile per hour:
+di (_b[MPHover] + 2*_b[MPHover_squared]*0)*100   * Effect of 1 mile: increase by 8.28%
+
+* Calculate the effect of 20 miles:
+di (_b[MPHover] + 2*_b[MPHover_squared]*20)*100  * Effect of 20 miles: increase by 4.9%
+
+* Calculate the effect of 50 miles:
+di (_b[MPHover] + 2*_b[MPHover_squared]*50)*100  * Effect of 50 miles: decrease by -0.16%
+
+* Calculate the effect of 100 miles:
+di (_b[MPHover] + 2*_b[MPHover_squared]*100)*100  * Effect of 100 miles: decrease by -8.61%
+
+* Interpretation: The effect of speed over the limit is negative but increasing, as the coefficient of MPHover is positive and the coefficient of MPHover_squared is negative.
+*-----------------------------------------------------------
